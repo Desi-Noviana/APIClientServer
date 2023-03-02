@@ -3,10 +3,23 @@ using API.Repositories.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Net;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//Konfigurasi Cors
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(
+        policy =>
+        {
+            policy.AllowAnyOrigin();
+            policy.AllowAnyHeader();
+            policy.AllowAnyMethod();
+        });
+});
 
 // Add services to the container.
 
@@ -31,8 +44,9 @@ builder.Services.AddScoped<UniversityRepository>();
 builder.Services.AddScoped<EducationRepository>();
 builder.Services.AddScoped<AccountRepository>();
 builder.Services.AddScoped<EmployeeRepository>();
-builder.Services.AddScoped<AccountRoleRepository>();
-builder.Services.AddScoped<ProfilingRepository>();
+/*builder.Services.AddScoped<AccountRoleRepository>();
+builder.Services.AddScoped<ProfilingRepository>();*/
+builder.Services.AddScoped<RoleRepository>();
 
 // Configure JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -56,7 +70,40 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(x =>
+{
+    x.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "MCC75 API",
+        Description = "ASP.NET Core API 6.0"
+    });
+
+    x.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+
+    x.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        new string[] { }
+                    }
+                });
+});
 
 var app = builder.Build();
 
@@ -66,17 +113,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-/*app.UseSession();
-app.Use(async (context, next) =>
-{
-    var jwtoken = context.Session.GetString("jwtoken");
-    if (!string.IsNullOrEmpty(jwtoken))
-    {
-        context.Request.Headers.Add("Authorization", "Bearer " + jwtoken);
-    }
-    await next();
-});*/
+
 app.UseHttpsRedirection();
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

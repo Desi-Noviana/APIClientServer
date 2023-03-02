@@ -1,5 +1,6 @@
 ﻿using API.Contexts;
 using API.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Repositories.Data
 {
@@ -12,3 +13,4 @@ namespace API.Repositories.Data
         }
     }
 }
+

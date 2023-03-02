@@ -11,7 +11,7 @@ namespace API.Repositories.Data
     public class AccountRepository : GeneralRepository<string, Account>
     {
         private readonly MyContexts context;
-        public AccountRepository(MyContexts context, EmployeeRepository employee) : base(context) // base ---> constraktor dari general revo dimana memilki context
+        public AccountRepository(MyContexts context) : base(context) // base ---> constraktor dari general revo dimana memilki context
         {
             this.context = context;
         }

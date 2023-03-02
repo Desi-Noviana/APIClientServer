@@ -52,6 +52,8 @@ namespace API.Controllers
              }
 
          }*/
+
+        //Konfigurasi menggunakan JWT
         [HttpPost("/Login")]
         public async Task<ActionResult> Login(LoginVM loginVM)
         {

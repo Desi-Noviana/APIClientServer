@@ -1,28 +1,19 @@
-﻿using API.Base;
-using API.Models;
-using API.Repositories.Data;
+﻿using API.Models;
 using API.Repositories.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
-namespace API.Controllers;
+namespace API.Base;
 
 [Route("api/[controller]")]
 [ApiController]
-public class UniversitiesController : BaseController<int, University, UniversityRepository>
+public class BaseController<Key, Entity, Repository> : ControllerBase
+    where Entity : class
+    where Repository: IRepository<Key,Entity>
 {
-    public UniversitiesController(UniversityRepository repository) : base(repository)
-    {
+    private readonly Repository repository;
 
-    }
-}
-//tidak digunakan lagi karena sudah menggunakan base yang mana semua proses CRUD sudah disatukan dalam satu folder
-/*{
-    private readonly UniversityRepository repository;
-
-    public UniversitiesController(UniversityRepository repository)
+    public BaseController(Repository repository)
     {
         this.repository = repository;
     }
@@ -42,9 +33,8 @@ public class UniversitiesController : BaseController<int, University, University
         }
 
     }
-
     [HttpGet("{key}")]
-    public async Task<ActionResult> GetById(int key)
+    public async Task<ActionResult> GetById(Key key)
     {
         try
         {
@@ -58,9 +48,8 @@ public class UniversitiesController : BaseController<int, University, University
             return BadRequest(new { statusCode = 400, message = $"Something Wrong! : {e.Message}" });
         }
     }
-
     [HttpPost]
-    public async Task<ActionResult> Insert(University entity)
+    public async Task<ActionResult> Insert(Entity entity)
     {
         try
         {
@@ -74,9 +63,8 @@ public class UniversitiesController : BaseController<int, University, University
             return BadRequest(new { statusCode = 400, message = "Something Wrong!" });
         }
     }
-
     [HttpPut]
-    public async Task<ActionResult> Update(University entity)
+    public async Task<ActionResult> Update(Entity entity)
     {
         try
         {
@@ -90,9 +78,8 @@ public class UniversitiesController : BaseController<int, University, University
             return BadRequest(new { statusCode = 400, message = "Something Wrong!" });
         }
     }
-
     [HttpDelete]
-    public async Task<ActionResult> Delete(int key)
+    public async Task<ActionResult> Delete(Key key)
     {
         try
         {
@@ -107,4 +94,3 @@ public class UniversitiesController : BaseController<int, University, University
         }
     }
 }
-*/
