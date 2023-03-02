@@ -11,7 +11,7 @@ namespace API.Repositories.Data
     public class AccountRepository : GeneralRepository<string, Account>
     {
         private readonly MyContexts context;
-        public AccountRepository(MyContexts context) : base(context) // base ---> constraktor dari general revo dimana memilki context
+        public AccountRepository(MyContexts context, EmployeeRepository employee) : base(context) // base ---> constraktor dari general revo dimana memilki context
         {
             this.context = context;
         }
@@ -102,6 +102,33 @@ namespace API.Repositories.Data
                 return false;
             }
             return Hashing.ValidatePassword(loginVM.Password, getAccounts.Password);
+        }
+        //JWT struktur method 
+        public async Task<UserdataVM> GetUserdata(string email)
+        {
+            var userdata = (from e in context.Employees
+                            join a in context.Accounts
+                            on e.NIK equals a.EmployeeNIK
+                            join ar in context.AccountRoles
+                            on a.EmployeeNIK equals ar.AccountNIK
+                            join r in context.Roles
+                            on ar.RoleId equals r.Id
+                            where e.Email == email
+                            select new UserdataVM
+                            {
+                                Email = e.Email,
+                                FullName = String.Concat(e.FirstName, " ", e.LastName)
+                            }).FirstOrDefault();
+            return userdata;
+        }
+        public List<string> GetRolesByNIK(string email)
+        {
+            var getNIK = context.Employees.FirstOrDefault(e => e.Email == email);
+            return  context.AccountRoles.Where(ar => ar.AccountNIK == getNIK.NIK).Join(
+                 context.Roles,
+                 ar => ar.RoleId,
+                 r => r.Id,
+                (ar, r) => r.Name).ToList();
         }
 
     }

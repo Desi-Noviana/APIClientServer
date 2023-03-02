@@ -3,6 +3,10 @@ using API.Repositories.Data;
 using API.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace API.Controllers
 {
@@ -11,10 +15,11 @@ namespace API.Controllers
     public class AccountController : ControllerBase
     {
         private readonly AccountRepository repository;
-
-        public AccountController(AccountRepository repository)
+        private readonly IConfiguration configuration;
+        public AccountController(AccountRepository repository, IConfiguration configuration)
         {
             this.repository = repository;
+            this.configuration = configuration;
         }
         [HttpPost("Register")]
         public async Task<ActionResult> Register(RegisterVM registerVM)
@@ -31,21 +36,71 @@ namespace API.Controllers
                 return BadRequest(new { statusCode = 400, message = "Something Wrong!" });
             }
         }
+
+        /* public async Task<ActionResult> Login(LoginVM loginVM)
+         {
+             try
+             {
+                 var result = await repository.Login(loginVM);
+                 return result is false
+                     ? Conflict(new { statusCode = 409, message = "Account or Password Does Not Match!" })
+                     : Ok(new { statusCode = 200, message = "Login Success!" });
+             }
+             catch
+             {
+                 return BadRequest(new { statusCode = 400, message = "Something Wrong!" });
+             }
+
+         }*/
         [HttpPost("/Login")]
         public async Task<ActionResult> Login(LoginVM loginVM)
         {
             try
             {
                 var result = await repository.Login(loginVM);
-                return result is false
-                    ? Conflict(new { statusCode = 409, message = "Account or Password Does Not Match!" })
-                    : Ok(new { statusCode = 200, message = "Login Success!" });
+                if (result is false)
+                {
+                    return Conflict(new
+                    {
+                        statusCode = 409,
+                        message = "Account or Password Does Not Match!"
+                    });
+                }
+                else
+                {
+                    var userdata = await repository.GetUserdata(loginVM.Email);
+                    var roles = repository.GetRolesByNIK(loginVM.Email);
+
+                    var claims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.Email, userdata.Email),
+                new Claim(ClaimTypes.Name, userdata.FullName)
+            };
+
+                    foreach (var item in roles)
+                    {
+                        claims.Add(new Claim(ClaimTypes.Role, item));
+                    }
+
+                    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Key"]));
+                    var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                    var token = new JwtSecurityToken(
+                        issuer: configuration["JWT:Issuer"],
+                        audience: configuration["JWT:Audience"],
+                        claims: claims,
+                        expires: DateTime.Now.AddMinutes(10),
+                        signingCredentials: signIn
+                        );
+
+                    var generateToken = new JwtSecurityTokenHandler().WriteToken(token);
+
+                    return Ok(new { statusCode = 200, message = "Login Success!", data = generateToken });
+                }
             }
             catch
             {
                 return BadRequest(new { statusCode = 400, message = "Something Wrong!" });
             }
-           
         }
     }
 }
